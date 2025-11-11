@@ -4,7 +4,7 @@ An experimental implementation of custom COPY formats for PostgreSQL.
 
 Avaialble formats are
 
-- [JSON Lines](https://jsonlines.org/) format support.
+- [JSON Lines](https://jsonlines.org/).
 
 ## Background
 
