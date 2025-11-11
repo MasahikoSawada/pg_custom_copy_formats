@@ -1,0 +1,5 @@
+/log/
+/tmp_install/
+*.so
+*.o
+TAGS
