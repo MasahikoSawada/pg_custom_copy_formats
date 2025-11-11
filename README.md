@@ -1,37 +1,36 @@
-# pg_copy_jsonlines
+# pg_custom_copy_formats
 
-An experimental implementation that adds [JSON Lines](https://jsonlines.org/) format support for PostgreSQL's COPY TO and COPY FROM commands. JSON Lines is a convenient format for storing structured data that may contain newlines and is designed for streaming large datasets one record at a time.
+An experimental implementation of custom COPY formats for PostgreSQL.
+
+Avaialble formats are
+
+- [JSON Lines](https://jsonlines.org/) format support.
 
 ## Background
 
 PostgreSQL's COPY command traditionally supports three built-in formats: text, CSV, and binary. In 2024, a proposal was made to make the COPY format system extensible, allowing third-party modules to implement custom formats. This proposal is currently under discussion in the PostgreSQL community ([CommitFest #4681](https://commitfest.postgresql.org/patch/4681/)).
 
+The custom COPY formats can be built with the patched PostgreSQL available [here](https://github.com/MasahikoSawada/postgresql/tree/dev_custom-copy-format).
+
 ⚠️ **Important Note**: This extension requires patches from the above proposal, which have not yet been committed to PostgreSQL. As such, this implementation is experimental and intended to serve as a reference implementation for the proposed COPY format extension API.
 
 # Build and Installation
 
-`pg_copy_jsonlines` can be built in the same way as other extensions:
+`pg_custom_copy_formats` can be built in the same way as other extensions:
 
 ```bash
-$ cd pg_copy_jsonlines
+$ cd pg_custom_copy_formats
 $ make USE_PGXS=1
 $ make install USE_PGXS=1
 ```
 
 ```sql
-=# CREATE EXTENSION pg_copy_jsonlines;
-CREATE EXTENSION
-=# \df
-                         List of functions
- Schema |   Name    | Result data type | Argument data types | Type
---------+-----------+------------------+---------------------+------
- public | jsonlines | copy_handler     | internal            | func
-(1 row)
+$ echo "shared_preload_libraries = 'pg_custom_copy_formats' >> ${PGDATA}/postgresql.conf"
 ```
 
-Now you can use `jsonlines` format in both COPY TO and COPY FROM commands.
+# JSON Lines
 
-# Examples
+You can use `jsonlines` format in both COPY TO and COPY FROM commands.
 
 ## `COPY TO` with JSON Lines format
 
@@ -47,7 +46,6 @@ INSERT 0 3
    2 | hello world | true
  999 |             | {"a": 1}
 (3 rows)
-
 
 =# COPY jl TO '/tmp/test.jsonl' WITH (format 'jsonlines');
 COPY 3
@@ -77,3 +75,16 @@ COPY 3
  999 |             | {"a": 1}
 (3 rows)
 ```
+
+## Compression supports
+
+`'jsonlines'` format supports data compression using zlib. For `COPY TO` command, you can specify `compression` and `compression_detail` options:
+
+```sql
+#= COPY jl TO '/tmp/jl.jsonl.gz' WITH (format 'jsonlines', compression 'gzip', compression_detail 'level=2');
+COPY 2
+=# COPY jl FROM '/tmp/jl.jsonl.gz' WITH (format 'jsonlines');
+COPY 2
+```
+
+The `COPY FROM` with `'jsonlines'` format automatically detects the compressed file by its extension.
